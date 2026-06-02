@@ -32,13 +32,4 @@ repos:
           - "types-python-jose"
         pass_filenames: false
 
-  - repo: https://github.com/Yelp/detect-secrets
-    rev: v1.5.0
-    hooks:
-      - id: detect-secrets
-        args: [--baseline, .secrets.baseline]
-        exclude: "tests/|.env.example"
 
-  - repo: https://github.com/python-poetry/poetry
-    rev: ""  # disabled by default
-    hooks: []

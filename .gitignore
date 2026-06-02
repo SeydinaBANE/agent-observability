@@ -12,3 +12,7 @@ build/
 .mypy_cache/
 *.db
 *.log
+.coverage
+coverage.xml
+uv.lock
+.coverage.*
