@@ -31,5 +31,3 @@ repos:
           - "types-passlib"
           - "types-python-jose"
         pass_filenames: false
-
-
