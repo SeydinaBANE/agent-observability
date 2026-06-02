@@ -41,7 +41,7 @@ workers = [
     "openai>=1.55.0",
 ]
 sdk = [
-    "langgraph>=0.2.60",
+    "langgraph>=1.2.2",
     "langchain>=0.3.0",
 ]
 docs = [
