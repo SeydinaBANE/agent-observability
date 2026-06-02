@@ -1,8 +1,20 @@
 # Agent Observability Dashboard
 
-[![CI](https://github.com/your-org/agent-observability/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/agent-observability/actions/workflows/ci.yml)
-
-**Plateforme de monitoring production-grade pour agents LangGraph.** Ingestion temps réel, détection d'anomalies (hallucinations, boucles infinies), dashboard multi-tenant, et alerting.
+<p align="center">
+  <img src="https://img.shields.io/github/actions/workflow/status/SeydinaBANE/agent-observability/ci.yml?branch=main&label=CI&logo=github" alt="CI">
+  <img src="https://img.shields.io/github/license/SeydinaBANE/agent-observability" alt="License">
+  <img src="https://img.shields.io/badge/python-3.11%2B-blue?logo=python" alt="Python">
+  <img src="https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi" alt="FastAPI">
+  <img src="https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql" alt="PostgreSQL">
+  <img src="https://img.shields.io/badge/Celery-5.4-37814A?logo=celery" alt="Celery">
+  <img src="https://img.shields.io/badge/Streamlit-1.41-FF4B4B?logo=streamlit" alt="Streamlit">
+  <img src="https://img.shields.io/badge/Docker-compose-2496ED?logo=docker" alt="Docker">
+  <img src="https://img.shields.io/badge/coverage-62%25-yellowgreen" alt="Coverage">
+  <img src="https://img.shields.io/badge/uses-LangGraph-1E3A5F" alt="LangGraph">
+  <br>
+  <strong>Plateforme de monitoring production-grade pour agents LangGraph.</strong><br>
+  Ingestion temps réel · Détection d'anomalies (hallucinations, boucles infinies) · Dashboard multi-tenant · Alerting
+</p>
 
 ---
 
@@ -26,25 +38,22 @@
 ## Quickstart
 
 ```bash
-# 1. Cloner et installer
-git clone <url>
+# 1. Cloner
+git clone https://github.com/SeydinaBANE/agent-observability
 cd agent-observability
-pip install -e ".[dev,dashboard,workers]"
-pip install -e sdk/
 
-# 2. Démarrer les services (PostgreSQL + Redis)
-make services
+# 2. Tout en une commande (Docker)
+docker compose up -d --build
 
-# 3. Lancer l'API
-make dev-api
-
-# 4. (Nouveau terminal) Dashboard
-make dev-dashboard
+# 3. Ou en local (dev)
+pip install -e ".[dev,dashboard,workers]" && pip install -e sdk/
+./dev-cli.py start
 ```
 
 - **API** : http://localhost:8000
 - **Docs Swagger** : http://localhost:8000/docs
-- **Dashboard** : http://localhost:8501 (clé API : `demo-key-1234567890123456`)
+- **Dashboard** : http://localhost:8501 (clé API : `demo-key-local-dev`)
+- **Health** : `curl http://localhost:8000/health`
 
 ---
 
@@ -67,7 +76,7 @@ Décorateur simple :
 ```python
 from agent_obs import monitor
 
-@monitor(agent_id="mon-agent", api_key="ta-clé")
+@monitor(agent_id="mon-agent", api_key="demo-key-local-dev")
 async def mon_agent(query: str) -> str:
     return await process(query)
 ```
