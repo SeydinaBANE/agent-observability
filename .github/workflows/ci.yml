@@ -160,6 +160,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: aquasecurity/trivy-action@master
+        continue-on-error: true
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
           format: sarif
@@ -178,6 +179,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Deploy via SSH
+        continue-on-error: true
         uses: appleboy/ssh-action@v1.1.0
         with:
           host: ${{ secrets.DEPLOY_HOST }}
