@@ -1,0 +1,125 @@
+services:
+  traefik:
+    image: traefik:v3.1
+    command:
+      - "--providers.docker"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.email=admin@example.com"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "traefik_data:/letsencrypt"
+    restart: always
+
+  postgres:
+    image: timescale/timescaledb:latest-pg16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${AGENT_OPS_DB_PASSWORD:-postgres}
+      POSTGRES_DB: agent_obs
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: always
+
+  api:
+    build:
+      context: .
+      target: api
+    ports:
+      - "8000:8000"
+    environment:
+      AGENT_OBS_DATABASE_URL: postgresql+asyncpg://postgres:${AGENT_OBS_DB_PASSWORD:-postgres}@postgres:5432/agent_obs
+      AGENT_OBS_DATABASE_URL_SYNC: postgresql://postgres:${AGENT_OBS_DB_PASSWORD:-postgres}@postgres:5432/agent_obs
+      AGENT_OBS_REDIS_URL: redis://redis:6379/0
+      AGENT_OBS_CELERY_BROKER_URL: redis://redis:6379/1
+      AGENT_OBS_CELERY_RESULT_BACKEND: redis://redis:6379/2
+      AGENT_OBS_SECRET_KEY: ${AGENT_OBS_SECRET_KEY}
+      AGENT_OBS_OPENAI_API_KEY: ${AGENT_OBS_OPENAI_API_KEY:-}
+      AGENT_OBS_ENVIRONMENT: production
+      AGENT_OBS_RETENTION_DAYS_RAW: "7"
+      AGENT_OBS_RETENTION_DAYS_AGGREGATED: "90"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=Host(`api.agent-obs.local`)"
+      - "traefik.http.services.api.loadbalancer.server.port=8000"
+
+  dashboard:
+    build:
+      context: .
+      target: dashboard
+    ports:
+      - "8501:8501"
+    environment:
+      AGENT_OBS_URL: http://api:8000
+      AGENT_OBS_API_KEY: ${AGENT_OBS_DASHBOARD_API_KEY:-}
+    depends_on:
+      - api
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=Host(`dashboard.agent-obs.local`)"
+      - "traefik.http.services.dashboard.loadbalancer.server.port=8501"
+
+  worker:
+    build:
+      context: .
+      target: worker
+    environment:
+      AGENT_OBS_DATABASE_URL: postgresql+asyncpg://postgres:${AGENT_OBS_DB_PASSWORD:-postgres}@postgres:5432/agent_obs
+      AGENT_OBS_DATABASE_URL_SYNC: postgresql://postgres:${AGENT_OBS_DB_PASSWORD:-postgres}@postgres:5432/agent_obs
+      AGENT_OBS_REDIS_URL: redis://redis:6379/0
+      AGENT_OBS_CELERY_BROKER_URL: redis://redis:6379/1
+      AGENT_OBS_CELERY_RESULT_BACKEND: redis://redis:6379/2
+      AGENT_OBS_OPENAI_API_KEY: ${AGENT_OBS_OPENAI_API_KEY:-}
+      AGENT_OBS_ENVIRONMENT: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: always
+
+  beat:
+    build:
+      context: .
+      target: beat
+    environment:
+      AGENT_OBS_CELERY_BROKER_URL: redis://redis:6379/1
+      AGENT_OBS_CELERY_RESULT_BACKEND: redis://redis:6379/2
+    depends_on:
+      - redis
+      - worker
+    restart: always
+
+volumes:
+  pgdata:
+  redis_data:
+  traefik_data:

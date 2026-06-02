@@ -1,0 +1,38 @@
+{
+  "__inputs": [],
+  "__requires": [],
+  "title": "Agent Observability - Anomalies & Alerts",
+  "panels": [
+    {
+      "title": "Anomalies by type",
+      "type": "piechart",
+      "targets": [
+        {
+          "expr": "count by(anomaly_type) (agent_obs_anomalies)",
+          "legendFormat": "{{anomaly_type}}"
+        }
+      ]
+    },
+    {
+      "title": "Alert severity distribution",
+      "type": "barchart",
+      "targets": [
+        {
+          "expr": "count by(severity) (agent_obs_alerts_firing)",
+          "legendFormat": "{{severity}}"
+        }
+      ]
+    },
+    {
+      "title": "Anomalies timeline",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "rate(agent_obs_anomalies_total[1h])",
+          "legendFormat": "anomalies/h"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 38
+}

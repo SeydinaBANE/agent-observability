@@ -1,0 +1,39 @@
+{
+  "__inputs": [],
+  "__requires": [],
+  "title": "Agent Observability - Costs",
+  "panels": [
+    {
+      "title": "Total cost per agent (24h)",
+      "type": "barchart",
+      "targets": [
+        {
+          "expr": "topk(10, sum by(agent_name) (rate(agent_obs_cost_usd_total[24h])))",
+          "legendFormat": "{{agent_name}}"
+        }
+      ]
+    },
+    {
+      "title": "Budget utilization (%)",
+      "type": "gauge",
+      "targets": [
+        {
+          "expr": "agent_obs_budget_utilization_pct",
+          "legendFormat": "budget used"
+        }
+      ]
+    },
+    {
+      "title": "Tokens per agent (7d)",
+      "type": "table",
+      "targets": [
+        {
+          "expr": "topk(20, sum by(agent_name) (agent_obs_tokens_total{period=\"7d\"}))",
+          "format": "table",
+          "legendFormat": "{{agent_name}}"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 38
+}

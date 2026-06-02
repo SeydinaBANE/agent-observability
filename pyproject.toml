@@ -1,0 +1,123 @@
+[project]
+name = "agent-observability"
+version = "0.1.0"
+description = "AI Agent Observability Dashboard — production-grade monitoring for LangGraph agents"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.6.0",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "asyncpg>=0.30.0",
+    "redis[hiredis]>=5.2.0",
+    "httpx>=0.28.0",
+    "python-dotenv>=1.0.0",
+    "langsmith>=0.1.140",
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
+    "bcrypt>=4.0,<5.0",
+    "tenacity>=9.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=6.0.0",
+    "ruff>=0.7.0",
+    "mypy>=1.13.0",
+    "pre-commit>=4.0.0",
+    "docker>=7.1.0",
+]
+dashboard = [
+    "streamlit>=1.40.0",
+    "plotly>=5.24.0",
+    "pandas>=2.2.0",
+]
+workers = [
+    "celery[redis]>=5.4.0",
+    "ollama>=0.4.0",
+    "openai>=1.55.0",
+]
+sdk = [
+    "langgraph>=0.2.60",
+    "langchain>=0.3.0",
+]
+docs = [
+    "mkdocs>=1.6.0",
+    "mkdocs-material>=9.5.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["api*", "core*", "workers*", "agent_obs*"]
+
+[tool.mypy]
+ignore_missing_imports = true
+exclude = ["sdk/"]
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+strict_optional = true
+check_untyped_defs = false
+
+[tool.ruff]
+line-length = 130
+target-version = "py311"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "W",   # warning
+    "UP",  # pyupgrade
+    "RUF", # ruff
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "N818",  # exception name not snake_case
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["N802", "N803", "N806"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::RuntimeWarning",
+]
+
+[tool.coverage.run]
+source = ["api", "core", "workers"]
+omit = ["*/tests/*", "*__init__*"]
+branch = true
+
+[tool.bandit]
+exclude_dirs = ["tests", ".venv", ".env"]
+skips = ["B101", "B303", "B311", "B404", "B603"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+    "except Exception",
+    "if TYPE_CHECKING:",
+]
+show_missing = true
+
+[build-system]
+requires = ["setuptools>=75.0"]
+build-backend = "setuptools.build_meta"

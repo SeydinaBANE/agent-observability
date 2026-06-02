@@ -1,0 +1,89 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: agent_obs
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+
+  api:
+    build:
+      context: .
+      target: api
+    ports:
+      - "8000:8000"
+    environment:
+      AGENT_OBS_DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/agent_obs
+      AGENT_OBS_DATABASE_URL_SYNC: postgresql://postgres:postgres@postgres:5432/agent_obs
+      AGENT_OBS_REDIS_URL: redis://redis:6379/0
+      AGENT_OBS_CELERY_BROKER_URL: redis://redis:6379/1
+      AGENT_OBS_CELERY_RESULT_BACKEND: redis://redis:6379/2
+      AGENT_OBS_SECRET_KEY: dev-secret-key-change-in-prod
+      AGENT_OBS_ENVIRONMENT: development
+      AGENT_OBS_DEBUG: "true"
+    volumes:
+      - .:/app
+    depends_on:
+      postgres:
+        condition: service_started
+      redis:
+        condition: service_started
+
+  dashboard:
+    build:
+      context: .
+      target: dashboard
+    ports:
+      - "8501:8501"
+    environment:
+      AGENT_OBS_URL: http://api:8000
+    volumes:
+      - .:/app
+    depends_on:
+      - api
+
+  worker:
+    build:
+      context: .
+      target: worker
+    environment:
+      AGENT_OBS_DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/agent_obs
+      AGENT_OBS_DATABASE_URL_SYNC: postgresql://postgres:postgres@postgres:5432/agent_obs
+      AGENT_OBS_REDIS_URL: redis://redis:6379/0
+      AGENT_OBS_CELERY_BROKER_URL: redis://redis:6379/1
+      AGENT_OBS_CELERY_RESULT_BACKEND: redis://redis:6379/2
+      AGENT_OBS_ENVIRONMENT: development
+    volumes:
+      - .:/app
+    depends_on:
+      - postgres
+      - redis
+
+  beat:
+    build:
+      context: .
+      target: beat
+    environment:
+      AGENT_OBS_CELERY_BROKER_URL: redis://redis:6379/1
+      AGENT_OBS_CELERY_RESULT_BACKEND: redis://redis:6379/2
+    depends_on:
+      - redis
+      - worker
+
+volumes:
+  pgdata_dev:

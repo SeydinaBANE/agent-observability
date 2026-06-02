@@ -1,0 +1,66 @@
+{
+  "__inputs": [],
+  "__requires": [],
+  "title": "Agent Observability - Overview",
+  "panels": [
+    {
+      "title": "Runs per minute",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "rate(agent_obs_runs_total[5m])",
+          "legendFormat": "runs/s"
+        }
+      ]
+    },
+    {
+      "title": "Average latency (ms)",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "avg(agent_obs_run_duration_ms)",
+          "legendFormat": "avg latency"
+        }
+      ]
+    },
+    {
+      "title": "Cost per hour ($)",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "sum(rate(agent_obs_cost_usd_total[1h]))",
+          "legendFormat": "cost/hour"
+        }
+      ]
+    },
+    {
+      "title": "Error rate",
+      "type": "graph",
+      "targets": [
+        {
+          "expr": "rate(agent_obs_errors_total[5m])",
+          "legendFormat": "errors/s"
+        }
+      ]
+    },
+    {
+      "title": "Active alerts",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "count(agent_obs_alerts_firing)"
+        }
+      ]
+    },
+    {
+      "title": "Active anomalies",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "count(agent_obs_anomalies_active)"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 38
+}
