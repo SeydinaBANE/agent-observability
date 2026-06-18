@@ -1,3 +1,4 @@
+import logging
 import uuid
 from datetime import UTC, datetime
 
@@ -8,10 +9,14 @@ from core.config import settings
 from core.database import async_session
 from core.models import AgentRun, Anomaly
 
+logger = logging.getLogger(__name__)
+
 
 async def detect_loops(tenant_id: str, run_id: str, session_id: str | None, agent_id: str) -> None:
     if not session_id:
         return
+    from datetime import timedelta
+
     async with async_session() as db:
         result = await db.execute(
             select(AgentRun)
@@ -19,7 +24,7 @@ async def detect_loops(tenant_id: str, run_id: str, session_id: str | None, agen
                 AgentRun.tenant_id == uuid.UUID(tenant_id),
                 AgentRun.agent_id == uuid.UUID(agent_id),
                 AgentRun.session_id == session_id,
-                AgentRun.created_at >= datetime.now(UTC),
+                AgentRun.created_at >= datetime.now(UTC) - timedelta(hours=1),
             )
             .order_by(AgentRun.created_at.desc())
             .limit(20)
@@ -108,5 +113,5 @@ async def detect_hallucinations(tenant_id: str, run_id: str, input_preview: str 
                     )
                     db.add(anomaly)
                     await db.commit()
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.exception("Hallucination detection failed: %s", exc)

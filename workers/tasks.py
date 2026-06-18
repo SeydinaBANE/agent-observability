@@ -48,14 +48,15 @@ async def _analyze_run_async(run_id: str, tenant_id: str) -> dict:
     return {"status": "completed", "run_id": run_id}
 
 
-@celery_app.task
+@celery_app.task(max_retries=3, default_retry_delay=60)
 def purge_old_traces() -> dict:
     from datetime import datetime, timedelta
 
     from sqlalchemy import create_engine, text
 
-    sync_url = "postgresql://postgres:postgres@localhost:5432/agent_obs"
-    sync_engine = create_engine(sync_url)
+    from core.config import settings as s
+
+    sync_engine = create_engine(s.database_url_sync, pool_pre_ping=True)
     cutoff = datetime.now(UTC) - timedelta(days=7)
     with sync_engine.connect() as conn:
         result = conn.execute(

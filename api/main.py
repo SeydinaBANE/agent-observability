@@ -1,3 +1,4 @@
+import logging
 import uuid
 from datetime import UTC, datetime
 
@@ -26,6 +27,12 @@ from core.schemas import (
     TraceQuery,
 )
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)-7s | %(name)s:%(lineno)d - %(message)s",
+)
+logger = logging.getLogger(__name__)
+
 app = FastAPI(
     title="Agent Observability API",
     version="0.1.0",
@@ -44,14 +51,19 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup():
+    logger.info("Starting Agent Observability API")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        logger.info("Database schema initialized")
     from api.auth import hash_api_key
     from core.config import settings
 
+    if settings.environment == "production" and settings.demo_api_key == "demo-key-local-dev":
+        logger.warning("Demo API key is still set to default — change AGENT_OBS_DEMO_API_KEY in production")
+
     demo_key = settings.demo_api_key
     async with engine.begin() as conn:
-        await conn.execute(
+        result = await conn.execute(
             text(
                 "INSERT INTO tenants (id, name, slug, api_key_hash, plan, is_active, created_at) "
                 "VALUES (:id, :name, :slug, :hash, :plan, :active, :now) "
@@ -67,6 +79,10 @@ async def startup():
                 "now": datetime.now(UTC),
             },
         )
+        if result.rowcount > 0:
+            logger.info("Demo tenant seeded")
+        else:
+            logger.debug("Demo tenant already exists")
 
 
 @app.get("/health", response_model=HealthCheck)
